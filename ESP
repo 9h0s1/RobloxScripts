@@ -46,7 +46,15 @@ function Esp(v)
 		-- Update loop
 		local conn
 		conn = runs.RenderStepped:Connect(function()
-			if not v.Parent or v:FindFirstChild("Humanoid").Health <= 0 then
+			if not v.Parent then
+				tracer:Destroy()
+				Box:Destroy()
+				conn:Disconnect()
+				return
+			end
+
+			local hum = v:FindFirstChild("Humanoid")
+			if not hum or hum.Health <= 0 then
 				tracer:Destroy()
 				Box:Destroy()
 				conn:Disconnect()
