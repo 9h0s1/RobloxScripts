@@ -33,6 +33,14 @@ local function createLine()
 		Visible = false,
 		_frame = frame
 	}
+	
+	obj.Destroy = function()
+		if obj._frame then
+			obj._frame:Destroy()
+		end
+		obj.Visible = false
+	end
+	
 	table.insert(Drawing.objects, obj)
 	return obj
 end
@@ -63,6 +71,14 @@ local function createSquare()
 		_frame = frame,
 		_stroke = uistroke,
 	}
+	
+	obj.Destroy = function()
+		if obj._frame then
+			obj._frame:Destroy()
+		end
+		obj.Visible = false
+	end
+	
 	table.insert(Drawing.objects, obj)
 	return obj
 end
