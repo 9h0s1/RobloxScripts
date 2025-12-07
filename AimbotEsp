@@ -51,7 +51,7 @@ end)
 uis.InputBegan:Connect(function(i,p)
 	if p then return end
 	
-	if i.KeyCode == Enum.KeyCode.Q then
+	if i.KeyCode == Enum.KeyCode.E then
 		aiming = not aiming
 	end
 end)
