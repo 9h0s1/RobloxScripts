@@ -1,0 +1,102 @@
+local rep = game:GetService("ReplicatedStorage")
+local plrs = game:GetService("Players")
+local runs = game:GetService("RunService")
+
+local Drawing = loadstring(game:HttpGet("https://github.com/exxtremestuffs/SimpleSpySource/raw/master/SimpleSpy.lua"))()
+
+local plr = plrs.LocalPlayer
+local char = plr.Character or plr.CharacterAdded:Wait()
+local camera = workspace.CurrentCamera
+local worldtoviewport = camera.WorldToViewportPoint
+
+local headoff = Vector3.new(0, 0.5, 0)
+local legoff = Vector3.new(0, 3, 0)
+
+_G.TeamCheck = false
+_G.Lines = true
+_G.Boxes = true
+_G.PlayersESP = true
+_G.BotsESP = true
+
+local function IsPlayer(model)
+	return plrs:GetPlayerFromCharacter(model) ~= nil
+end
+
+function Esp(v)
+	if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and v ~= plr.Character then
+		
+		local isPlayer = IsPlayer(v)
+
+		if isPlayer and not _G.PlayersESP then return end
+		if (not isPlayer) and not _G.BotsESP then return end
+		if _G.TeamCheck and isPlayer and plr.Team == v.Team then return end
+		
+		local tracer = Drawing.new("Line")
+		tracer.Visible = false
+		tracer.Color = Color3.fromRGB(0, 255, 0)
+		tracer.Thickness = 2.5
+		
+		local Box = Drawing.new("Square")
+		Box.Visible = false
+		Box.Color = Color3.fromRGB(0, 255, 0)
+		Box.Thickness = 2.5
+		Box.Transparency = 0
+		Box.Filled = false
+
+		-- Update loop
+		local conn
+		conn = runs.RenderStepped:Connect(function()
+			if not v.Parent or v:FindFirstChild("Humanoid").Health <= 0 then
+				tracer:Destroy()
+				Box:Destroy()
+				conn:Disconnect()
+				return
+			end
+
+			local root = v:FindFirstChild("HumanoidRootPart")
+			if not root then return end
+			
+			local head = v:FindFirstChild("Head")
+			if not head then return end
+			local rootpos,rootvis = worldtoviewport(camera, root.Position)
+			local headpos = worldtoviewport(camera, head.Position + headoff)
+			local legpos = worldtoviewport(camera, root.Position - legoff)
+
+			local vec, onscreen = camera:WorldToViewportPoint(root.Position)
+			
+			if not onscreen then
+				tracer.Visible = false
+				Box.Visible = false
+				BoxOutline.Visible = false
+				return
+			end
+
+			-- Line ESP
+			if _G.Lines then
+				tracer.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+				tracer.To = Vector2.new(vec.X, vec.Y)
+				tracer.Visible = true
+			else
+				tracer.Visible = false
+			end
+
+			-- Box ESP
+			if _G.Boxes then
+				Box.Size = Vector2.new(1500/rootpos.Z,headpos.Y-legpos.Y)
+				Box.Position = Vector2.new(rootpos.X-Box.Size.X / 2,rootpos.Y - Box.Size.Y/2)
+				Box.Visible = true
+			else
+				Box.Visible = false
+				BoxOutline.Visible = false
+			end
+		end)
+	end
+end
+
+for i,v in workspace:GetDescendants() do
+	Esp(v)
+end
+
+workspace.DescendantAdded:Connect(function(v)
+	Esp(v)
+end)
