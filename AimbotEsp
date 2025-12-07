@@ -1,75 +1,111 @@
-local uis = game.UserInputService
-
-local player = game.Players.LocalPlayer
-local mouse = player:GetMouse()
+local plrs = game:GetService("Players")
+local uis = game:GetService("UserInputService")
+local runs = game:GetService("RunService")
 local camera = workspace.CurrentCamera
 
---local aimGui = script.Parent
---local aimCircle = aimGui.AimCircle
+local plr = plrs.LocalPlayer
+local Mouse = plr:GetMouse()
 
--- ตั้งค่าความเร็วและขนาดของวงกลมช่วยเล็ง
-local aimSpeed = 1  -- ค่าต่ำ = เล็งช้า, ค่าสูง = เล็งไว
-local aimRadius = 200 -- ขนาดของวงกลมช่วยเล็ง
+local canlock = true
+local locking = false
+local target = nil
 
-local aiming = false
+local function getClosestToMouse()
+	local closestChar = nil
+	local closestDist = math.huge
 
--- ปรับขนาดของวงกลมให้ตรงกับ aimRadius
---aimCircle.Size = UDim2.new(0, aimRadius * 2, 0, aimRadius * 2)
+	for _, p in plrs:GetPlayers() do
+		if p ~= plr then
+			local char = p.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
 
-local function getClosestTarget()
-	local closestEnemy = nil
-	local shortestDistance = aimRadius * 1.1
+			if hrp and hum and hum.Health > 0 then
+				local screenPos, onScreen = camera:WorldToViewportPoint(hrp.Position)
+				if onScreen then
+					local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
 
-	for _, character in pairs(workspace:GetChildren()) do
-		if character:IsA("Model") and character:FindFirstChild("Humanoid") and character ~= player.Character then
-			local head = character:FindFirstChild("Head")
-			if head then
-				local screenPos, onScreen = camera:WorldToViewportPoint(head.Position)
-				local distance = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(mouse.X, mouse.Y)).magnitude
-
-				if onScreen and distance < shortestDistance then
-					shortestDistance = distance
-					closestEnemy = head
+					if dist < closestDist then
+						closestDist = dist
+						closestChar = char
+					end
 				end
 			end
 		end
 	end
 
-	return closestEnemy
+	return closestChar
 end
 
--- เมื่อคลิกเมาส์เริ่มล็อกเป้า
-mouse.Button1Down:Connect(function()
-	--aiming = true
-end)
 
--- เมื่อปล่อยเมาส์หยุดล็อกเป้า
-mouse.Button1Up:Connect(function()
-	--aiming = false
-end)
+uis.InputBegan:Connect(function(input, gp)
+	if gp then return end
 
-uis.InputBegan:Connect(function(i,p)
-	if p then return end
-	
-	if i.KeyCode == Enum.KeyCode.E then
-		aiming = not aiming
+	if input.KeyCode == Enum.KeyCode.E then
+		if not canlock then return end
+		
+		if locking then
+			locking = false
+			target = nil
+		else
+			target = getClosestToMouse()
+			if target then
+				locking = true
+			end
+		end
+	elseif input.KeyCode == Enum.KeyCode.L then
+		canlock = false
 	end
 end)
 
-game:GetService("RunService").RenderStepped:Connect(function()
-	-- อัปเดตตำแหน่งของวงกลมให้ตามเมาส์
-	--aimCircle.Position = UDim2.new(0, mouse.X, 0, mouse.Y)
 
-	if aiming then
-		local target = getClosestTarget()
-		if target then
-			local targetPos = target.Position
-			local currentPos = camera.CFrame.Position
-			local newCFrame = CFrame.new(currentPos, targetPos)
+runs.RenderStepped:Connect(function(dt)
+	
+	if locking then
+		if not target or not target.Parent or not target:FindFirstChildOfClass("Humanoid") or target:FindFirstChildOfClass("Humanoid").Health <= 0 then
+			locking = false
+			target = nil
+			return
+		end
+		
+		local hrp = target:FindFirstChild("HumanoidRootPart")
+		if not hrp then return end
 
-			-- ปรับการหมุนของกล้องไปยังเป้าหมายอย่าง Smooth
-			--camera.CFrame = camera.CFrame:Lerp(newCFrame, aimSpeed)
-			camera.CFrame = newCFrame
+		local camPos = camera.CFrame.Position
+		local desired = CFrame.lookAt(camPos, hrp.Position)
+
+		camera.CFrame = camera.CFrame:Lerp(desired, dt * 50)
+	end
+end)
+
+runs.RenderStepped:Connect(function()
+	for _, p in plrs:GetPlayers() do
+		if p ~= plr then
+			local char = p.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+			if hrp and hum and hum.Health > 0 then
+
+				if not hrp:FindFirstChild("ESPTAG") then
+					-- BillboardGui
+					local bbg = Instance.new("BillboardGui")
+					bbg.Name = "ESPTAG"
+					bbg.AlwaysOnTop = true
+					bbg.Size = UDim2.new(1.5, 0, 1.5, 0)    -- ใหญ่พอจะเห็น
+					bbg.StudsOffset = Vector3.new(0, 0, 0) -- ลอยเหนือหัว
+					bbg.Parent = hrp
+					bbg.Adornee = hrp
+
+					-- Frame ข้างใน
+					local frame = Instance.new("Frame")
+					frame.Size = UDim2.new(1, 0, 1, 0)
+					frame.BackgroundColor3 = Color3.fromRGB(170, 0, 255)
+					frame.BackgroundTransparency = 0
+					frame.BorderSizePixel = 0
+					frame.Parent = bbg
+				end
+			end
 		end
 	end
 end)
