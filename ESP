@@ -2,7 +2,7 @@ local rep = game:GetService("ReplicatedStorage")
 local plrs = game:GetService("Players")
 local runs = game:GetService("RunService")
 
-local Drawing = loadstring(game:HttpGet("https://github.com/exxtremestuffs/SimpleSpySource/raw/master/SimpleSpy.lua"))()
+local Drawing = loadstring(game:HttpGet("https://raw.githubusercontent.com/9h0s1/RobloxScripts/refs/heads/main/DrawingLibrary"))()
 
 local plr = plrs.LocalPlayer
 local char = plr.Character or plr.CharacterAdded:Wait()
