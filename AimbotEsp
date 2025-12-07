@@ -1,0 +1,111 @@
+local plrs = game:GetService("Players")
+local uis = game:GetService("UserInputService")
+local runs = game:GetService("RunService")
+local camera = workspace.CurrentCamera
+
+local plr = plrs.LocalPlayer
+local Mouse = plr:GetMouse()
+
+local canlock = true
+local locking = false
+local target = nil
+
+local function getClosestToMouse()
+	local closestChar = nil
+	local closestDist = math.huge
+
+	for _, p in plrs:GetPlayers() do
+		if p ~= plr then
+			local char = p.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+			if hrp and hum and hum.Health > 0 then
+				local screenPos, onScreen = camera:WorldToViewportPoint(hrp.Position)
+				if onScreen then
+					local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
+
+					if dist < closestDist then
+						closestDist = dist
+						closestChar = char
+					end
+				end
+			end
+		end
+	end
+
+	return closestChar
+end
+
+
+uis.InputBegan:Connect(function(input, gp)
+	if gp then return end
+
+	if input.KeyCode == Enum.KeyCode.E then
+		if not canlock then return end
+		
+		if locking then
+			locking = false
+			target = nil
+		else
+			target = getClosestToMouse()
+			if target then
+				locking = true
+			end
+		end
+	elseif input.KeyCode == Enum.KeyCode.L then
+		canlock = false
+	end
+end)
+
+
+runs.RenderStepped:Connect(function(dt)
+	
+	if locking then
+		if not target or not target.Parent or not target:FindFirstChildOfClass("Humanoid") or target:FindFirstChildOfClass("Humanoid").Health <= 0 then
+			locking = false
+			target = nil
+			return
+		end
+		
+		local hrp = target:FindFirstChild("HumanoidRootPart")
+		if not hrp then return end
+
+		local camPos = camera.CFrame.Position
+		local desired = CFrame.lookAt(camPos, hrp.Position)
+
+		camera.CFrame = camera.CFrame:Lerp(desired, dt * 50)
+	end
+end)
+
+runs.RenderStepped:Connect(function()
+	for _, p in plrs:GetPlayers() do
+		if p ~= plr then
+			local char = p.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+			if hrp and hum and hum.Health > 0 then
+
+				if not hrp:FindFirstChild("ESPTAG") then
+					-- BillboardGui
+					local bbg = Instance.new("BillboardGui")
+					bbg.Name = "ESPTAG"
+					bbg.AlwaysOnTop = true
+					bbg.Size = UDim2.new(1.5, 0, 1.5, 0)    -- ใหญ่พอจะเห็น
+					bbg.StudsOffset = Vector3.new(0, 0, 0) -- ลอยเหนือหัว
+					bbg.Parent = hrp
+					bbg.Adornee = hrp
+
+					-- Frame ข้างใน
+					local frame = Instance.new("Frame")
+					frame.Size = UDim2.new(1, 0, 1, 0)
+					frame.BackgroundColor3 = Color3.fromRGB(170, 0, 255)
+					frame.BackgroundTransparency = 0
+					frame.BorderSizePixel = 0
+					frame.Parent = bbg
+				end
+			end
+		end
+	end
+end)
