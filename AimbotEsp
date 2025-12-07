@@ -13,8 +13,9 @@ local target = nil
 local function getClosestToMouse()
 	local closestChar = nil
 	local closestDist = math.huge
+	local mousePos = uis:GetMouseLocation()
 
-	for _, p in plrs:GetPlayers() do
+	for _, p in ipairs(plrs:GetPlayers()) do
 		if p ~= plr then
 			local char = p.Character
 			local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -22,9 +23,10 @@ local function getClosestToMouse()
 
 			if hrp and hum and hum.Health > 0 then
 				local screenPos, onScreen = camera:WorldToViewportPoint(hrp.Position)
+				
 				if onScreen then
-					local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
-
+					local dist = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+					
 					if dist < closestDist then
 						closestDist = dist
 						closestChar = char
